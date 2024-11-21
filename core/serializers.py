@@ -14,17 +14,19 @@ class UserSerializer(serializers.ModelSerializer):
         return User.objects.create(**validated_data)
     
 class AppointmentSerializer(serializers.ModelSerializer):
-    user_common = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(role=User.COMMON))
-    user_specialist = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(role__in=[User.PERSONAL_TRAINER, User.NUTRITIONIST]))
-    date_time = serializers.DateTimeField()
-    duration = serializers.DurationField()
+    class UserSummarySerializer(serializers.ModelSerializer):
+        class Meta:
+            model = User
+            fields = ['name', 'email']  
+
+    user_common = UserSummarySerializer()
+    user_specialist = UserSummarySerializer()
 
     class Meta:
         model = Appointment
-        fields = ['id', 'user_common', 'user_specialist', 'date_time', 'duration']
-
-    def create(self, validated_data):
-        # Aqui, você pode incluir validações adicionais se necessário
-        return Appointment.objects.create(**validated_data)
+        fields = [
+            'id', 'user_common', 'user_specialist', 'date_time', 
+            'duration', 'address_or_link', 'is_online', 'status'
+        ]
 
     

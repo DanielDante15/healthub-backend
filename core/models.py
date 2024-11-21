@@ -60,20 +60,39 @@ class User(AbstractBaseUser):
 
 
 class Appointment(models.Model):
+    
+    CANCELED = 'canceled'
+    ACCEPTED = 'accepted'
+    SCHEDULED = 'scheduled'
+
+    STATUS_CHOICES = [
+        (CANCELED, 'Canceled'),
+        (ACCEPTED, 'Accepted'),
+        (SCHEDULED, 'Scheduled'),
+    ]
+    
+    
     user_common = models.ForeignKey(
-        settings.AUTH_USER_MODEL,  # Refere-se ao modelo de usuário definido, no seu caso seria o modelo User
+        settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE,
         related_name='common_appointments',
-        limit_choices_to={'role': User.COMMON},  # Garante que o usuário seja do tipo 'common'
+        limit_choices_to={'role': User.COMMON}, 
     )
     user_specialist = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='specialist_appointments',
-        limit_choices_to=models.Q(role=User.PERSONAL_TRAINER) | models.Q(role=User.NUTRITIONIST),  # Garantindo que o especialista seja 'personal' ou 'nutri'
+        limit_choices_to=models.Q(role=User.PERSONAL_TRAINER) | models.Q(role=User.NUTRITIONIST),
     )
-    date_time = models.DateTimeField()  # Data e hora do agendamento
-    duration = models.DurationField()  # Duração do agendamento (por exemplo, 1 hora)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=SCHEDULED,
+    )
+    address_or_link = models.CharField(max_length=255,blank=True,null=True)
+    is_online  = models.BooleanField(default=False)
+    date_time = models.DateTimeField()  
+    duration = models.DurationField()
 
     def __str__(self):
         return f"Appointment with {self.user_specialist} for {self.user_common} on {self.date_time}"
