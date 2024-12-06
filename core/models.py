@@ -18,7 +18,6 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        # Ensure the superuser gets a role as 'common' or any other desired role
         return self.create_user(email, password, role='common', **extra_fields)
 
 class User(AbstractBaseUser):
@@ -96,3 +95,130 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"Appointment with {self.user_specialist} for {self.user_common} on {self.date_time}"
+
+
+class Service(models.Model):
+    TITLE_MAX_LENGTH = 255
+
+    ONLINE = 'online'
+    IN_PERSON = 'in_person'
+    
+    SERVICE_TYPE_CHOICES = [
+        (ONLINE, 'Online'),
+        (IN_PERSON, 'In Person'),
+    ]
+
+    specialist = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='services',
+        limit_choices_to=models.Q(role=User.PERSONAL_TRAINER) | models.Q(role=User.NUTRITIONIST),
+    )
+
+    title = models.CharField(max_length=TITLE_MAX_LENGTH)
+    description = models.TextField()
+    duration = models.DurationField() 
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    service_type = models.CharField(
+        max_length=20,
+        choices=SERVICE_TYPE_CHOICES,
+        default=ONLINE,
+    )
+
+    def __str__(self):
+        return f"{self.title} - {self.specialist.name}"
+    
+    
+class DietPlan(models.Model):
+    name = models.CharField(max_length=255)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='user_plans',
+        limit_choices_to={'role': User.COMMON}, 
+    )
+    nutri = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='assigned_diet_plans',
+        limit_choices_to={'role': User.NUTRITIONIST},
+    )
+    meals = models.ManyToManyField(
+        'Meal',
+        related_name='diet_plans',
+        blank=True 
+    )
+
+    def __str__(self):
+        return f"Diet Plan: {self.name} for {self.user.name} by {self.nutri.name}"
+
+
+
+class Meal(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+
+class MealItem(models.Model):
+    meal = models.ForeignKey(
+        Meal, 
+        on_delete=models.CASCADE, 
+        related_name='items'
+    )
+    name = models.CharField(max_length=255)
+    qtd = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.name} - {self.qtd}"
+
+
+class WorkoutPlan(models.Model):
+    name = models.CharField(max_length=255)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='user_workout_plans',
+        limit_choices_to={'role': User.COMMON}, 
+    )
+    personal = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='assigned_workout_plans',
+        limit_choices_to={'role': User.PERSONAL_TRAINER},
+    )
+    workouts = models.ManyToManyField(
+        'Workout',
+        related_name='workout_plans',
+        blank=True 
+    )
+
+    def __str__(self):
+        return f"Workout Plan: {self.name} for {self.user.name} by {self.personal.name}"
+
+
+
+class Workout(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+
+class Exercise(models.Model):
+    workout = models.ForeignKey(
+        Workout, 
+        on_delete=models.CASCADE, 
+        related_name='exercises'
+    )
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+    weight = models.DecimalField(max_digits=10,decimal_places=2,blank=True,null=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.description}"
+    
+
