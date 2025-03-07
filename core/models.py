@@ -221,4 +221,25 @@ class Exercise(models.Model):
     def __str__(self):
         return f"{self.name} - {self.description}"
     
+    
+    
+class SpecialistInfo(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        limit_choices_to=models.Q(role=User.PERSONAL_TRAINER) | models.Q(role=User.NUTRITIONIST),
+        related_name='specialist_info'
+    )
+    description = models.TextField(blank=True, null=True)
+    education = models.TextField(blank=True, null=True)
+    certificate = models.TextField(blank=True, null=True)
+    rating = models.DecimalField(
+        max_digits=2, 
+        decimal_places=1, 
+        default=5.0
+    )
+
+    def __str__(self):
+        return f"Specialist Info for {self.user.name}"
+
 
